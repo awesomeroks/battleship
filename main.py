@@ -29,18 +29,18 @@ shipNames = {
 colours = {
     "water": pygame.color.Color(144,202,249),
     "ship": pygame.color.Color("gray"),
-    9: pygame.color.Color("red"),
+    9: pygame.color.Color(120, 62, 0),
     8: pygame.color.Color(195, 253, 255),
     "text": pygame.color.Color("black"),
     "gridOverlay": pygame.color.Color(93, 153, 198),
     "bg": pygame.color.Color(195, 253, 255),
     0:pygame.color.Color(144,202,249),
     1:pygame.color.Color(195, 253, 255),
-    5.0:pygame.color.Color(0, 253, 255),
-    4.0:pygame.color.Color(0, 100, 255),
-    3.0:pygame.color.Color(0, 0, 255),
-    3.1:pygame.color.Color(0, 0, 0),
-    2.0:pygame.color.Color(195, 0, 255),
+    5.0:pygame.color.Color(93, 153, 198),
+    4.0:pygame.color.Color(93, 153, 198),
+    3.0:pygame.color.Color(93, 153, 198),
+    3.1:pygame.color.Color(93, 153, 198),
+    2.0:pygame.color.Color(93, 153, 198),
 
 
 }
@@ -64,6 +64,23 @@ displayHeight = 0
 
 gameStart = False
 
+exp1 = pygame.image.load('sprites/exp1.png')
+exp2 = pygame.image.load('sprites/exp2.png')
+exp3 = pygame.image.load('sprites/exp3.png')
+exp4 = pygame.image.load('sprites/exp4.png')
+exp5 = pygame.image.load('sprites/exp5.png')
+exp6 = pygame.image.load('sprites/exp6.png')
+
+
+fire1 = pygame.image.load('sprites/fire1.png')
+fire2 = pygame.image.load('sprites/fire2.png')
+fire3 = pygame.image.load('sprites/fire3.png')
+fire4 = pygame.image.load('sprites/fire4.png')
+fire5 = pygame.image.load('sprites/fire5.png')
+fires = [fire1, fire2, fire3, fire4, fire5]
+rocket = pygame.image.load('sprites/rocket.png')
+compRocket = pygame.image.load('sprites/comprocket.png')
+explosion = [exp1,exp2,exp3,exp4,exp5]
 
 userTurn = False
 huntMode = False
@@ -101,6 +118,36 @@ currentShipDirection = "NONE"
 acquiredDirection = False
 destroySteps = 0
 backTracking = False
+def animateExplosion(board, column, row): # board = 0 for left, 1 for right
+    if(board == 1):
+        r = compRocket
+        endLocationx = int(leftMargin + boardWidth*board + (column+0.5)*(cellWidth + cellMargin))
+        endLocationy = int(topMargin + (row +0.0 )*(cellWidth + cellMargin))
+        distance = endLocationy - 40
+        startLocationx = int(endLocationx - distance)
+        startLocationy = endLocationy - distance
+        for i in range(0,  distance,16):
+            # pygame.time.Clock().tick(60)
+            draw()
+            screen.blit(r,( startLocationx + i, startLocationy + i))
+            flipScreen(customTick = 60)
+    else:
+        r = rocket
+        endLocationx = int(leftMargin + boardWidth*board + (column+0.0 )*(cellWidth + cellMargin))
+        endLocationy = int(topMargin + (row +0.0 )*(cellWidth + cellMargin))
+        distance = endLocationy - 40
+        startLocationx = int(endLocationx + distance)
+        startLocationy = endLocationy - distance
+        for i in range(0,  distance,16):
+            # pygame.time.Clock().tick(60)
+            draw()
+            screen.blit(r,( startLocationx - i, startLocationy + i))
+            flipScreen(customTick = 60)
+    draw()
+    flipScreen()
+    for i in explosion:
+            pygame.time.Clock().tick(12)
+            pygame.display.update(screen.blit(i,(leftMargin  + (boardWidth + leftMargin)*board + column*(cellWidth + cellMargin),topMargin + row*(cellWidth + cellMargin))))
 def destroyTarget():
     global prevc, prevr, huntMode, acquiredDirection, currentShipDirection, destroySteps, backTracking, availableDirections
     print("DESTROYING", (prevc, prevr), currentShipDirection)
@@ -108,6 +155,7 @@ def destroyTarget():
     destroySteps +=1
     if(currentShipDirection == "LEFT" and "LEFT" in availableDirections):
         prevc -= 1
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "RIGHT"
@@ -118,14 +166,18 @@ def destroyTarget():
                 acquiredDirection = False
                 currentShipDirection = "NONE"
                 return
-            backTracking = True
+            if(computerGrid[prevc+1 %9][prevr] not in [8,9]):
+                backTracking = True
+            else:
+                huntMode = False
+                acquiredDirection = False
+                currentShipDirection = "NONE"
             print("BACKTRACKING")
         elif(computerGrid[prevc][prevr] != 8):
             computerGrid[prevc][prevr] = 9
-            huntMode = False
-            acquiredDirection = False
     elif(currentShipDirection == "RIGHT" and "RIGHT" in availableDirections):
         prevc += 1
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "LEFT"
@@ -136,14 +188,19 @@ def destroyTarget():
                 acquiredDirection = False
                 currentShipDirection = "NONE"
                 return
-            backTracking = True
+            print(computerGrid[prevc-1 %9][prevr] , (prevc-1, prevr))
+            if(computerGrid[prevc-1 %9][prevr] not in [8,9]):
+                backTracking = True
+            else:
+                huntMode = False
+                acquiredDirection = False
+                currentShipDirection = "NONE"
             print("BACKTRACKING")
         elif(computerGrid[prevc][prevr] != 8):
             computerGrid[prevc][prevr] = 9
-            huntMode = False
-            acquiredDirection = False
     elif(currentShipDirection == "UP" and "UP" in availableDirections):
         prevr -= 1
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "DOWN"
@@ -154,15 +211,21 @@ def destroyTarget():
                 acquiredDirection = False
                 currentShipDirection = "NONE"
                 return
-            backTracking = True
+
+            print(computerGrid[prevc][prevr+1 %9], (prevc, prevr+1))
+            if(computerGrid[prevc][prevr+1 %9] not in [8,9]):
+                backTracking = True
+            else:
+                huntMode = False
+                acquiredDirection = False
+                currentShipDirection = "NONE"
             print("BACKTRACKING")
         elif(computerGrid[prevc][prevr] != 8):
             computerGrid[prevc][prevr] = 9
-            acquiredDirection = False
-            huntMode = False
 
     elif(currentShipDirection == "DOWN" and "DOWN" in availableDirections):
         prevr += 1
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "UP"
@@ -173,12 +236,16 @@ def destroyTarget():
                 acquiredDirection = False
                 currentShipDirection = "NONE"
                 return
-            backTracking = True
+            print(computerGrid[prevc][prevr-1 %9], (prevc, prevr-1))
+            if(computerGrid[prevc][prevr-1 %9] not in [8,9]):
+                backTracking = True
+            else:
+                huntMode = False
+                acquiredDirection = False
+                currentShipDirection = "NONE"
             print("BACKTRACKING")
         elif(computerGrid[prevc][prevr] != 8):
             computerGrid[prevc][prevr] = 9
-            acquiredDirection = False
-            huntMode = False
     else:
         acquiredDirection = False
         destroySteps = 0
@@ -193,13 +260,13 @@ def setAvailableDirections():
     if(prevc == 0 or computerGrid[prevc-1][prevr] in [8,9]): #previously hit or if at unmovable location
         print("LEFT, ", end ="")
         availableDirections.remove("LEFT")
-    elif(prevc == 9 or computerGrid[prevc+1][prevr] in [8,9]):
+    if(prevc == 9 or computerGrid[prevc+1][prevr] in [8,9]):
         print("RIGHT, ", end ="")
         availableDirections.remove("RIGHT")
     if(prevr == 0 or computerGrid[prevc][prevr-1] in [8,9]):
         print("UP, ", end ="")
         availableDirections.remove("UP")
-    elif(prevr ==9  or computerGrid[prevc][prevr+1] in [8,9]):
+    if(prevr ==9  or computerGrid[prevc][prevr+1] in [8,9]):
         print("DOWN ")
         availableDirections.remove("DOWN")
     print()
@@ -217,12 +284,28 @@ def huntTarget():
         return
     setAvailableDirections()
     if(availableDirections == set()):
+        c = random.randint(0,boardDimension-1)
+        r = random.randint(0,boardDimension-1)
+        while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
+            c = random.randint(0,boardDimension-1)
+            r = random.randint(0,boardDimension-1)
+        animateExplosion(1, c, r)
+        if(computerGrid[c][r] == 0):
+            computerGrid[c][r] = 8
+        else:
+            computerGrid[c][r] = 9
+            prevc = c
+            prevr = r
+            print("HIT THE SUCKER AT", (c,r))
+            huntMode = True
+        userTurn = True
         return
     randomDirection = random.choice(list(availableDirections))
     print("CHECKING: " + randomDirection)
     if(randomDirection == "LEFT"):
         prevc -= 1
         print("HIT ATTEMPT AT ", (prevc, prevr))
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             prevc +=1
@@ -234,6 +317,7 @@ def huntTarget():
     elif(randomDirection == "RIGHT"):
         prevc += 1
         print("HIT ATTEMPT AT ", (prevc, prevr))
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             prevc -= 1
@@ -245,7 +329,7 @@ def huntTarget():
     elif(randomDirection == "UP"):
         prevr -= 1
         print("HIT ATTEMPT AT ", (prevc, prevr))
-
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             prevr +=1
@@ -257,7 +341,7 @@ def huntTarget():
     elif(randomDirection == "DOWN"):
         prevr += 1
         print("HIT ATTEMPT AT ", (prevc, prevr))
-
+        animateExplosion(1, prevc, prevr)
         if(computerGrid[prevc][prevr] == 0):
             computerGrid[prevc][prevr] = 8
             prevr -= 1
@@ -286,6 +370,7 @@ def computerAlgo():
         while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
             c = random.randint(0,boardDimension-1)
             r = random.randint(0,boardDimension-1)
+        animateExplosion(1, c, r)
         if(computerGrid[c][r] == 0):
             computerGrid[c][r] = 8
         else:
@@ -350,11 +435,20 @@ def checkFinished():
                 end1 = False
 
     if(end == True or end1 == True):
+        
         if(end1):
             print("GAME OVER - Computer wins")
+            label = gothFont.render("You Lose!",  True, colours["text"],)
         else:
             print("GAME OVER - You win")
-        closePygame()
+            label = gothFont.render("You Win!", True, colours["text"])
+        while(True):
+            screen.fill(colours['bg'])
+            screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight/2 - label.get_height()/2)))
+            flipScreen()
+            for event in pygame.event.get():
+                if(event.type == pygame.QUIT or event.type == pygame.KEYDOWN):
+                    closePygame()
 
 class Ship(pygame.sprite.Sprite):
     def __init__(self, shipType, startpos,shipName):
@@ -368,7 +462,7 @@ class Ship(pygame.sprite.Sprite):
         self.rotatedrect = pygame.Rect(startpos[0], startpos[1],  cellWidth,int(cellWidth*shipType))
         self.height = cellWidth
         self.width = int(cellWidth*shipType)
-        self.column = - 1
+        self.column = -1
         self.row = -1
         self.set = False
 
@@ -415,7 +509,6 @@ class Ship(pygame.sprite.Sprite):
                 m = y - topMargin
                 selectedColumn = l // (cellMargin + cellWidth)
                 selectedRow = m //(cellMargin + cellWidth)
-                
                 print(self.shipType, "PLACED AT", (self.column, self.row))
                 if(selectedColumn + int(self.shipType) <= boardDimension and self.rotated == False):
                     x = selectedColumn *(cellMargin  + cellWidth) + boardWidth + 2*leftMargin
@@ -437,7 +530,9 @@ class Ship(pygame.sprite.Sprite):
             screen.blit(self.rotatedimage, self.rotatedrect)
         else:
             screen.blit(self.image, self.rect)
-
+gothFont =  None
+smallHeadFont = None
+subtitleFont = None
 battleShip = Ship(shipNames['BATTLESHIP'], (leftMargin  ,boardHeight +topMargin + 15), "battleship")
 carrier = Ship(shipNames['CARRIER'], (leftMargin +150  ,boardHeight +topMargin + 15), "carrier")
 patrolShip = Ship(shipNames['PATROL'], (leftMargin + 350 ,boardHeight  +topMargin+ 15), "patrol")
@@ -445,10 +540,13 @@ destroyer = Ship(shipNames['DESTROYER'], (leftMargin  +450  ,boardHeight +topMar
 submarine = Ship(shipNames['SUBMARINE'], (leftMargin   + 600,boardHeight +topMargin + 15), "submarine")
 ships = [battleShip, carrier, patrolShip, destroyer, submarine]
 def initPygame():
-    global screen, font, displayHeight, displayWidth
+    global screen, font, displayHeight, displayWidth, gothFont, smallHeadFont, subtitleFont
     pygame.init()
     pygame.font.init()
-    font = pygame.font.SysFont("Montserrat", 14)
+    font = pygame.font.Font("fonts/Montserrat-Regular.ttf", 14)
+    gothFont =  pygame.font.Font("fonts/Montserrat-SemiBold.ttf", 40)
+    smallHeadFont = pygame.font.Font("fonts/Montserrat-Regular.ttf", 17)
+    subtitleFont = pygame.font.Font("fonts/Montserrat-SemiBold.ttf", 14)
 
     displayWidth = 2 * (cellWidth + cellMargin) * \
         boardDimension + 2*(rightMargin + leftMargin)
@@ -469,15 +567,20 @@ def get_input():
             for i in ships:
                 i.checkMouseDown((x,y))
             if(x < boardWidth + leftMargin  and x > leftMargin and y<boardHeight + topMargin and y>topMargin):
+                if(not gameStart):
+                    return
                 x = x - leftMargin
                 y = y - topMargin
                 selectedColumn = x // (cellMargin + cellWidth)
                 selectedRow = y //(cellMargin + cellWidth)
                 if(userGrid[selectedColumn][selectedRow] not in [0,8,9]):
+                    animateExplosion(0, selectedColumn, selectedRow)
                     userGrid[selectedColumn][selectedRow] = 9 #hit
                     userTurn = False
                 elif(userGrid[selectedColumn][selectedRow] == 0):
+                    animateExplosion(0, selectedColumn, selectedRow)
                     userGrid[selectedColumn][selectedRow] = 8 #miss
+
                     userTurn = False
             elif (x>boardWidth + leftMargin + leftMargin and x < boardWidth + boardWidth  + 2* leftMargin and y>topMargin and y<boardHeight + topMargin):
                 x = x - boardWidth
@@ -490,7 +593,7 @@ def get_input():
             computerAlgo()
 
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_CAPSLOCK:
+            if event.key == pygame.K_F1:
                 print("READY")
                 gameStart = True
                 for i in ships:
@@ -504,9 +607,9 @@ def get_input():
             closePygame()
     return None, None
 
-def flipScreen():
+def flipScreen(customTick = 60):
     pygame.display.flip()
-    pygame.time.Clock().tick(60)
+    pygame.time.Clock().tick(customTick)
 def drawBoard():
 
     pygame.draw.rect(screen, colours["gridOverlay"], pygame.Rect(
@@ -515,26 +618,41 @@ def drawBoard():
                 (-borderWidth +boardWidth + 2*leftMargin  ,topMargin-borderWidth ), (boardWidth +2*borderWidth  - cellMargin, 2*borderWidth+ boardWidth - cellMargin)))
     for i in range(len(userGrid)):
         for j in range(len(userGrid[0])):
-            pygame.draw.rect(screen, colours[userGrid[i][j]], pygame.Rect(
-                (leftMargin + i*(cellWidth + cellMargin) , topMargin + j * (cellWidth+ cellMargin)), (cellWidth, cellWidth)))
+            if(userGrid[i][j] in [8,9,0]):
+                pygame.draw.rect(screen, colours[userGrid[i][j]], pygame.Rect(
+                    (leftMargin + i*(cellWidth + cellMargin) , topMargin + j * (cellWidth+ cellMargin)), (cellWidth, cellWidth)))
+            else:
+                pygame.draw.rect(screen, colours[0], pygame.Rect(
+                    (leftMargin + i*(cellWidth + cellMargin) , topMargin + j * (cellWidth+ cellMargin)), (cellWidth, cellWidth)))
     for i in range(len(computerGrid)):
         for j in range(len(computerGrid[0])):
             pygame.draw.rect(screen, colours[computerGrid[i][j]], pygame.Rect(
                 (2*leftMargin + i*(cellWidth + cellMargin) + boardWidth , topMargin + j * (cellWidth+ cellMargin)), (cellWidth, cellWidth)))
 def drawText():
-    label = font.render("Your Attacks", True, colours["text"])
+    label = subtitleFont.render("Your Attacks", True, colours["text"])
     screen.blit(label,(int(leftMargin + ( boardDimension/2)*(cellMargin + cellWidth) - label.get_width()/2), 15))
-    label = font.render("Your Ships", True, colours["text"])
+    label = subtitleFont.render("Your Ships", True, colours["text"])
     screen.blit(label,(int(boardWidth+2*leftMargin + ( boardDimension/2)*(cellMargin + cellWidth) - label.get_width()/2), 15))
-
-
+fireval = 0
+def drawFire():
+    global fireval
+    for i in range(len(userGrid)):
+        for j in range(len(userGrid[0])):
+            if(computerGrid[i][j] == 9):
+                screen.blit(fires[fireval],( 2*leftMargin + boardWidth + (i )*(cellWidth + cellMargin), topMargin + j*(cellWidth +cellMargin)))
+            if(userGrid[i][j] == 9):
+                screen.blit(fires[fireval],( leftMargin  + (i )*(cellWidth + cellMargin), topMargin + j*(cellWidth +cellMargin)))
+    fireval += 1
+    fireval %= 5
 
 def draw():
     screen.fill(colours['bg'])
     drawBoard()
+    
     drawText()
     for i in ships:
         i.draw()
+    drawFire()
 
     flipScreen()
 
@@ -546,11 +664,34 @@ def closePygame():
 
 
 def gameLoop():
+    showInstructions()
     placeComputerShips()
     while True:
         draw()
         get_input()
 
+def showInstructions():
+    while True:
+        screen.fill(colours["bg"])
+        label = gothFont.render("Battleship", True, colours["text"], )
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(25)))
+        
+        label = smallHeadFont.render("Battle of the Legends", True, colours["text"], )
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(70)))
+        label = subtitleFont.render("Instructions", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(130)))
+        label = font.render("1) Place your ships from by selecting and deselecting at your desired location.", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(160)))
+        label = font.render("2) Press any key to rotate your ship.", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(190)))
+        label = font.render("2) Press F1 to start the game.", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(220)))
+        flipScreen()
+        for event in pygame.event.get():
+            if(event.type == pygame.KEYDOWN):
+                return
+            elif(event.type == pygame.QUIT):
+                closePygame()
 
 if __name__ == "__main__":
     initPygame()
