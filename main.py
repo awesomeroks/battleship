@@ -5,6 +5,7 @@ ship sprites from: https://www.vecteezy.com/free-vector/frigate - Frigate Vector
 
 import pygame
 import random
+import os
 # import classes
 x = []
 userGrid = []
@@ -557,7 +558,14 @@ def initPygame():
     screen.fill(colours['bg'])
     pygame.display.set_caption("BATTLESHIP: Battle of the Legends")
 
-
+def resetGrid():
+    global computerGrid
+    computerGrid = []
+    x = []
+    for i in range(boardDimension):
+        for j in range(boardDimension):
+            x = x + [0]
+        computerGrid += [x]
 def get_input():
     global gameStart, userTurn
     for event in pygame.event.get():
@@ -595,9 +603,12 @@ def get_input():
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_F1:
                 print("READY")
-                gameStart = True
                 for i in ships:
+                    if(i.column == -1 or i.row == -1):
+                        resetGrid()
+                        return
                     i.finishSetup()
+                gameStart = True
             else:
                 print("ROTATE SHIP")
                 for i in ships:
@@ -694,6 +705,8 @@ def showInstructions():
                 closePygame()
 
 if __name__ == "__main__":
+    file_path = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(file_path)
     initPygame()
     gameLoop()
     closePygame()
