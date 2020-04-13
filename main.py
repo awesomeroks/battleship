@@ -158,41 +158,55 @@ def animateExplosion(board, column, row): # board = 0 for left, 1 for right
     for i in explosion:
             pygame.time.Clock().tick(12)
             pygame.display.update(screen.blit(i,(leftMargin  + (boardWidth + leftMargin)*board + column*(cellWidth + cellMargin),topMargin + row*(cellWidth + cellMargin))))
-
-# def getActiveShipNumber():
-#     global computerShips
-#     for i in computerShips:
-#         if(i.destroyed == False):
-
-
-def destroyTarget():
-    global prevc, prevr, huntMode, acquiredDirection, currentShipDirection, destroySteps, backTracking, availableDirections
-    print("DESTROYING", (prevc, prevr), currentShipDirection)
-    setAvailableDirections()
-    if(availableDirections == set()):
+currentDestroyedNumber = 0
+prevDestroyedNumber = 0
+def getActiveShipNumber():
+    global computerShips, prevDestroyedNumber, currentDestroyedNumber
+    currentDestroyedNumber = 0
+    for i in ships:
+        if(i.destroyed == True):
+            currentDestroyedNumber += 1
+    print(currentDestroyedNumber, prevDestroyedNumber)
+def chooseRandom():
+    global acquiredDirection, huntMode, prevc, prevr
+    huntMode = False
+    acquiredDirection = False
+    c = random.randint(0,boardDimension-1)
+    r = random.randint(0,boardDimension-1)
+    while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
         c = random.randint(0,boardDimension-1)
         r = random.randint(0,boardDimension-1)
-        while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
-            c = random.randint(0,boardDimension-1)
-            r = random.randint(0,boardDimension-1)
-        animateExplosion(1, c, r)
-        if(computerGrid[c][r] == 0):
-            computerGrid[c][r] = 8
-            huntMode = False
-            acquiredDirection = False
-        else:
-            computerGrid[c][r] = 9
-            prevc = c
-            prevr = r
-            print("HIT THE SUCKER AT", (c,r))
-            huntMode = True
+    animateExplosion(1, c, r)
+    if(computerGrid[c][r] == 0):
+        computerGrid[c][r] = 8
+        huntMode = False
+        acquiredDirection = False
+    else:
+        computerGrid[c][r] = 9
+        prevc = c
+        prevr = r
+        print("HIT THE SUCKER AT", (c,r))
+        huntMode = True
+    userTurn = True
+
+def destroyTarget():
+    global prevc, prevr, huntMode, acquiredDirection, currentShipDirection, destroySteps, backTracking, availableDirections, prevDestroyedNumber, currentDestroyedNumber
+    print("DESTROYING", (prevc, prevr), currentShipDirection)
+    if(setAvailableDirections()):
+        return
+    prevDestroyedNumber = currentDestroyedNumber
+    getActiveShipNumber()
+    destroySteps +=1
+    if(prevDestroyedNumber != currentDestroyedNumber):
+        chooseRandom()
+        huntMode = False
+        acquiredDirection = False
         userTurn = True
         return
-    destroySteps +=1
     if(currentShipDirection == "LEFT" and "LEFT" in availableDirections):
         prevc -= 1
         animateExplosion(1, prevc, prevr)
-        if(computerGrid[prevc][prevr] == 0):
+        if(computerGrid[prevc][prevr] == 0 ):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "RIGHT"
             prevc += destroySteps + 1
@@ -214,7 +228,7 @@ def destroyTarget():
     elif(currentShipDirection == "RIGHT" and "RIGHT" in availableDirections):
         prevc += 1
         animateExplosion(1, prevc, prevr)
-        if(computerGrid[prevc][prevr] == 0):
+        if(computerGrid[prevc][prevr] == 0 ):
             computerGrid[prevc][prevr] = 8
             currentShipDirection = "LEFT"
             prevc -= destroySteps + 1
@@ -249,7 +263,7 @@ def destroyTarget():
                 return
 
             print(computerGrid[prevc][prevr+1 %9], (prevc, prevr+1))
-            if(computerGrid[prevc][prevr+1 %9] not in [8,9]):
+            if(computerGrid[prevc][prevr+1 %9] not in [8,9] ):
                 backTracking = True
             else:
                 huntMode = False
@@ -289,7 +303,7 @@ def destroyTarget():
 
 
 def setAvailableDirections():
-    global availableDirections
+    global availableDirections, prevc, prevr
     availableDirections = {"UP", "DOWN", "LEFT", "RIGHT"}
     print("Dir: ", currentShipDirection)
     print("NOT Possible:", end ="")
@@ -308,8 +322,9 @@ def setAvailableDirections():
     print()
     print("AVAILABLE DIRECTIONS:", availableDirections)
     if(availableDirections == set()):
-        huntMode = False
-        acquiredDirection = False
+        chooseRandom()
+        return True
+    return False
 
 
 
@@ -318,23 +333,7 @@ def huntTarget():
     if(acquiredDirection == True):
         destroyTarget()
         return
-    setAvailableDirections()
-    if(availableDirections == set()):
-        c = random.randint(0,boardDimension-1)
-        r = random.randint(0,boardDimension-1)
-        while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
-            c = random.randint(0,boardDimension-1)
-            r = random.randint(0,boardDimension-1)
-        animateExplosion(1, c, r)
-        if(computerGrid[c][r] == 0):
-            computerGrid[c][r] = 8
-        else:
-            computerGrid[c][r] = 9
-            prevc = c
-            prevr = r
-            print("HIT THE SUCKER AT", (c,r))
-            huntMode = True
-        userTurn = True
+    if(setAvailableDirections()):
         return
     randomDirection = random.choice(list(availableDirections))
     print("CHECKING: " + randomDirection)
@@ -745,7 +744,7 @@ def draw():
     for i in computerShips:
         i.draw()
     drawFire()
-
+    # getActiveShipNumber()
     flipScreen()
 
 def closePygame():
