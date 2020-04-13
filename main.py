@@ -30,8 +30,8 @@ shipNames = {
 colours = {
     "water": pygame.color.Color(144,202,249),
     "ship": pygame.color.Color("gray"),
-    9: pygame.color.Color(120, 62, 0),
-    8: pygame.color.Color(195, 253, 255),
+    9: pygame.color.Color(120, 62, 0), #HIT
+    8: pygame.color.Color(195, 253, 255), #miss
     "text": pygame.color.Color("black"),
     "gridOverlay": pygame.color.Color(93, 153, 198),
     "bg": pygame.color.Color(195, 253, 255),
@@ -64,6 +64,10 @@ displayWidth = 0
 displayHeight = 0
 
 gameStart = False
+pygame.mixer.init()
+bgmusic = pygame.mixer.Sound('sounds/bgm.wav')
+explosionMusic = pygame.mixer.Sound('sounds/gexpl.wav')
+
 
 exp1 = pygame.image.load('sprites/exp1.png')
 exp2 = pygame.image.load('sprites/exp2.png')
@@ -82,12 +86,16 @@ fires = [fire1, fire2, fire3, fire4, fire5]
 rocket = pygame.image.load('sprites/rocket.png')
 compRocket = pygame.image.load('sprites/comprocket.png')
 explosion = [exp1,exp2,exp3,exp4,exp5]
-
+pygame.mixer.Channel(0).play(bgmusic, -1)
 userTurn = False
 huntMode = False
 probabilityMap = []
 y = []
 z = []
+gothFont =  None
+smallHeadFont = None
+subtitleFont = None
+
 for i in range(boardDimension):
     for j in range(boardDimension):
         x = x + [0]
@@ -146,13 +154,40 @@ def animateExplosion(board, column, row): # board = 0 for left, 1 for right
             flipScreen(customTick = 60)
     draw()
     flipScreen()
+    pygame.mixer.Channel(2).play(explosionMusic)
     for i in explosion:
             pygame.time.Clock().tick(12)
             pygame.display.update(screen.blit(i,(leftMargin  + (boardWidth + leftMargin)*board + column*(cellWidth + cellMargin),topMargin + row*(cellWidth + cellMargin))))
+
+# def getActiveShipNumber():
+#     global computerShips
+#     for i in computerShips:
+#         if(i.destroyed == False):
+
+
 def destroyTarget():
     global prevc, prevr, huntMode, acquiredDirection, currentShipDirection, destroySteps, backTracking, availableDirections
     print("DESTROYING", (prevc, prevr), currentShipDirection)
     setAvailableDirections()
+    if(availableDirections == set()):
+        c = random.randint(0,boardDimension-1)
+        r = random.randint(0,boardDimension-1)
+        while(computerGrid[c][r] == 9 or computerGrid[c][r] == 8):
+            c = random.randint(0,boardDimension-1)
+            r = random.randint(0,boardDimension-1)
+        animateExplosion(1, c, r)
+        if(computerGrid[c][r] == 0):
+            computerGrid[c][r] = 8
+            huntMode = False
+            acquiredDirection = False
+        else:
+            computerGrid[c][r] = 9
+            prevc = c
+            prevr = r
+            print("HIT THE SUCKER AT", (c,r))
+            huntMode = True
+        userTurn = True
+        return
     destroySteps +=1
     if(currentShipDirection == "LEFT" and "LEFT" in availableDirections):
         prevc -= 1
@@ -389,9 +424,8 @@ def placeComputerShips():
     #battleship
     c = random.randint(0,boardDimension-1)
     r = random.randint(0,boardDimension-1)
-    coin = random.randint(0,1)
-    for i in ships:
-        coin = random.randint(0,1)
+    for i in computerShips:
+        coin = random.randint(0,1) # orientation
         if(coin == 0):
             z = True
             while z:
@@ -405,8 +439,10 @@ def placeComputerShips():
                         break
                     if(k == c+int(i.shipType)):
                         z = False
-                        for k in range(c,c + int(i.shipType)):
-                            userGrid[k][r] = i.shipType
+                        i.column = c
+                        i.row = r
+                        i.rotated = False
+                        i.finishSetup()
         else:
             z = True
             while z:
@@ -420,8 +456,11 @@ def placeComputerShips():
                         break
                     if(k == r+int(i.shipType)):
                         z = False
-                        for k in range(r,r + int(i.shipType)):
-                            userGrid[c][k] = i.shipType
+                        i.column = c
+                        i.row = r
+                        i.rotated = True
+                        i.finishSetup()
+                        print(i.cells)
 
 def checkFinished():
     if(not gameStart):
@@ -436,7 +475,6 @@ def checkFinished():
                 end1 = False
 
     if(end == True or end1 == True):
-        
         if(end1):
             print("GAME OVER - Computer wins")
             label = gothFont.render("You Lose!",  True, colours["text"],)
@@ -452,7 +490,7 @@ def checkFinished():
                     closePygame()
 
 class Ship(pygame.sprite.Sprite):
-    def __init__(self, shipType, startpos,shipName):
+    def __init__(self, shipType, startpos,shipName, visible = True):
         super().__init__()
         self.selected = False
         self.shipType = shipType
@@ -461,85 +499,113 @@ class Ship(pygame.sprite.Sprite):
         self.rect = pygame.Rect(startpos[0], startpos[1], int(cellWidth*shipType), cellWidth)
         self.rotatedimage = pygame.image.load("sprites/rotated/" + shipName + ".png")
         self.rotatedrect = pygame.Rect(startpos[0], startpos[1],  cellWidth,int(cellWidth*shipType))
+        self.computerShip = not visible
+        if(self.computerShip):
+            self.image.fill((255, 255, 255, 100), special_flags=pygame.BLEND_ADD)
+            self.rotatedimage.fill((255,255,255, 100), special_flags=pygame.BLEND_ADD)
+
+
         self.height = cellWidth
         self.width = int(cellWidth*shipType)
+        self.cells = []
+        self.destroyed = False
         self.column = -1
         self.row = -1
         self.set = False
-
+        self.visible = visible
 
     def updatePos(self,pos):
         self.pos = pos
         self.rect = pygame.Rect(pos[0], pos[1], int(cellWidth*self.shipType), cellWidth)
         self.rotatedrect = pygame.Rect(pos[0], pos[1], cellWidth, int(cellWidth*self.shipType))
-    def checkHover(self):
-        pass
-        # if(self.rect.collidepoint(pygame.mouse.get_pos())):
-        #     # print("HOVERING ON " + str(self.shipType))
-        #     print("")
-    def checkMouseDown(self, pos):
-        if(self.rotated):
-            if(self.rotatedrect.collidepoint(pos)):
-                pygame.mouse.set_visible(self.selected)
-                self.selected = not self.selected
+    def computerShipUpdatePos(self):
+        pos = [leftMargin + (cellWidth + cellMargin)*self.column, topMargin + (cellWidth + cellMargin)*self.row]
+        self.updatePos(pos)
+    def checkDestroyed(self):
+        if(self.computerShip):
+            killed = 0
+            for i in self.cells:
+                if(userGrid[i[0]][i[1]] == 9):
+                    killed += 1
+            if(int(self.shipType) == killed):
+                self.destroyed = True
+                self.visible = True
         else:
-            if(self.rect.collidepoint(pos)):
-                pygame.mouse.set_visible(self.selected)
-                self.selected = not self.selected
+            killed = 0
+            for i in self.cells:
+                if(computerGrid[i[0]][i[1]] == 9):
+                    killed += 1
+            if(int(self.shipType) == killed):
+                self.destroyed = True
+                self.visible = True
+
+    def checkMouseDown(self, pos):
+        if(not self.computerShip):
+            if(self.rotated):
+                if(self.rotatedrect.collidepoint(pos)):
+                    pygame.mouse.set_visible(self.selected)
+                    self.selected = not self.selected
+            else:
+                if(self.rect.collidepoint(pos)):
+                    pygame.mouse.set_visible(self.selected)
+                    self.selected = not self.selected
     def finishSetup(self):
         print("SHIP: ", self.shipType, " STARTS AT: ",(self.column, self.row), ". LOCATIONS:", end = "")
         if(not self.rotated):
             for i in range(self.column,self.column + int(self.shipType)):
-                computerGrid[i][self.row] = self.shipType
+                if(self.computerShip):
+                    userGrid[i][self.row] = self.shipType
+                else:
+                    computerGrid[i][self.row] = self.shipType
+                self.cells += [[i, self.row]]
                 print((i, self.row), end = " ")
             print(' ')
         else:
             for i in range(self.row,self.row + int(self.shipType)):
-                computerGrid[self.column][i] = self.shipType
+                if(self.computerShip):
+                    userGrid[self.column][i] = self.shipType
+                else:
+                    computerGrid[self.column][i] = self.shipType
+                self.cells += [[self.column, i]]
                 print((self.column, i), end = " ")
             print(' ')
+        if(self.computerShip):
+            self.computerShipUpdatePos()
         gameStart = True
     def draw(self):
-        self.checkHover()
-        if(self.row != -1 and self.column != -1):
-            self.set = True
-        if(self.selected == True):
-            x, y = pygame.mouse.get_pos()
-            if(x > boardWidth + leftMargin + leftMargin and x < boardWidth + boardWidth + 2* leftMargin and y> topMargin and y< topMargin + boardHeight ):
-                l = x - 2*leftMargin - boardWidth
-                m = y - topMargin
-                selectedColumn = l // (cellMargin + cellWidth)
-                selectedRow = m //(cellMargin + cellWidth)
-                print(self.shipType, "PLACED AT", (self.column, self.row))
-                if(selectedColumn + int(self.shipType) <= boardDimension and self.rotated == False):
-                    x = selectedColumn *(cellMargin  + cellWidth) + boardWidth + 2*leftMargin
-                    y = selectedRow*(cellMargin + cellWidth) + topMargin
-                    self.row = selectedRow
-                    self.column = selectedColumn
+        self.checkDestroyed()
+        if(self.visible):
+            if(self.row != -1 and self.column != -1):
+                self.set = True
+            if(self.selected == True):
+                x, y = pygame.mouse.get_pos()
+                if(x > boardWidth + leftMargin + leftMargin and x < boardWidth + boardWidth + 2* leftMargin and y> topMargin and y< topMargin + boardHeight ):
+                    l = x - 2*leftMargin - boardWidth
+                    m = y - topMargin
+                    selectedColumn = l // (cellMargin + cellWidth)
+                    selectedRow = m //(cellMargin + cellWidth)
+                    print(self.shipType, "PLACED AT", (self.column, self.row))
+                    if(selectedColumn + int(self.shipType) <= boardDimension and self.rotated == False):
+                        x = selectedColumn *(cellMargin  + cellWidth) + boardWidth + 2*leftMargin
+                        y = selectedRow*(cellMargin + cellWidth) + topMargin
+                        self.row = selectedRow
+                        self.column = selectedColumn
+                        self.updatePos((x, y))
+                    elif(selectedRow + int(self.shipType) <= boardDimension and self.rotated == True):
+                        x = selectedColumn *(cellMargin  + cellWidth) + boardWidth + 2*leftMargin
+                        y = selectedRow*(cellMargin + cellWidth) + topMargin
+                        self.row = selectedRow
+                        self.column = selectedColumn
+                        self.updatePos((x, y))
+                else:
                     self.updatePos((x, y))
-                elif(selectedRow + int(self.shipType) <= boardDimension and self.rotated == True):
-                    x = selectedColumn *(cellMargin  + cellWidth) + boardWidth + 2*leftMargin
-                    y = selectedRow*(cellMargin + cellWidth) + topMargin
-                    self.row = selectedRow
-                    self.column = selectedColumn
-                    self.updatePos((x, y))
+                    self.column = -1
+                    self.row = -1
+            if(self.rotated):
+                screen.blit(self.rotatedimage, self.rotatedrect)
             else:
-                self.updatePos((x, y))
-                self.column = -1
-                self.row = -1
-        if(self.rotated):
-            screen.blit(self.rotatedimage, self.rotatedrect)
-        else:
-            screen.blit(self.image, self.rect)
-gothFont =  None
-smallHeadFont = None
-subtitleFont = None
-battleShip = Ship(shipNames['BATTLESHIP'], (leftMargin  ,boardHeight +topMargin + 15), "battleship")
-carrier = Ship(shipNames['CARRIER'], (leftMargin +150  ,boardHeight +topMargin + 15), "carrier")
-patrolShip = Ship(shipNames['PATROL'], (leftMargin + 350 ,boardHeight  +topMargin+ 15), "patrol")
-destroyer = Ship(shipNames['DESTROYER'], (leftMargin  +450  ,boardHeight +topMargin + 15), "destroyer")
-submarine = Ship(shipNames['SUBMARINE'], (leftMargin   + 600,boardHeight +topMargin + 15), "submarine")
-ships = [battleShip, carrier, patrolShip, destroyer, submarine]
+                screen.blit(self.image, self.rect)
+
 def initPygame():
     global screen, font, displayHeight, displayWidth, gothFont, smallHeadFont, subtitleFont
     pygame.init()
@@ -617,7 +683,19 @@ def get_input():
         elif event.type == pygame.QUIT:
             closePygame()
     return None, None
+battleShip = Ship(shipNames['BATTLESHIP'], (leftMargin  ,boardHeight +topMargin + 15), "battleship")
+carrier = Ship(shipNames['CARRIER'], (leftMargin +150  ,boardHeight +topMargin + 15), "carrier")
+patrolShip = Ship(shipNames['PATROL'], (leftMargin + 350 ,boardHeight  +topMargin+ 15), "patrol")
+destroyer = Ship(shipNames['DESTROYER'], (leftMargin  +450  ,boardHeight +topMargin + 15), "destroyer")
+submarine = Ship(shipNames['SUBMARINE'], (leftMargin   + 600,boardHeight +topMargin + 15), "submarine")
+ships = [battleShip, carrier, patrolShip, destroyer, submarine]
 
+computerBattleShip = Ship(shipNames['BATTLESHIP'], (-100, -100), "battleship", False)
+computerCarrier = Ship(shipNames['CARRIER'], (-100, -100), "carrier", False)
+computerPatrolShip = Ship(shipNames['PATROL'], (-100, -100), "patrol", False)
+computerDestroyer = Ship(shipNames['DESTROYER'], (-100, -100), "destroyer", False)
+computerSubmarine = Ship(shipNames['SUBMARINE'], (-100, -100), "submarine", False)
+computerShips = [computerBattleShip, computerCarrier, computerPatrolShip, computerSubmarine, computerDestroyer]
 def flipScreen(customTick = 60):
     pygame.display.flip()
     pygame.time.Clock().tick(customTick)
@@ -661,7 +739,10 @@ def draw():
     drawBoard()
     
     drawText()
+    
     for i in ships:
+        i.draw()
+    for i in computerShips:
         i.draw()
     drawFire()
 
@@ -691,12 +772,16 @@ def showInstructions():
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(70)))
         label = subtitleFont.render("Instructions", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(130)))
-        label = font.render("1) Place your ships from by selecting and deselecting at your desired location.", True, colours["text"])
+        label = font.render("1) Place your ships on the grid by selecting and deselecting at your desired location (right side grid).", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(160)))
         label = font.render("2) Press any key to rotate your ship.", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(190)))
-        label = font.render("2) Press F1 to start the game.", True, colours["text"])
+        label = font.render("3) Press F1 to start the game after setting up your ships.", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(220)))
+        label = font.render("4) Start destroying the AI!", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(250)))
+        label = font.render("Music Credits - Gameboy (Battleship)", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width() - 30)),int(430)))
         flipScreen()
         for event in pygame.event.get():
             if(event.type == pygame.KEYDOWN):
