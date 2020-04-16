@@ -68,26 +68,18 @@ pygame.mixer.init()
 bgmusic = pygame.mixer.Sound('sounds/bgm.wav')
 explosionMusic = pygame.mixer.Sound('sounds/gexpl.wav')
 
-
-exp1 = pygame.image.load('sprites/exp1.png')
-exp2 = pygame.image.load('sprites/exp2.png')
-exp3 = pygame.image.load('sprites/exp3.png')
-exp4 = pygame.image.load('sprites/exp4.png')
-exp5 = pygame.image.load('sprites/exp5.png')
-exp6 = pygame.image.load('sprites/exp6.png')
+fires = []
+explosion = []
+for i in range(1,7):
+    fires.append(pygame.image.load('sprites/fires/fire' + str(i) + '.png'))
+    explosion.append(pygame.image.load('sprites/explosion/exp' + str(i) + '.png'))
 
 
-fire1 = pygame.image.load('sprites/fire1.png')
-fire2 = pygame.image.load('sprites/fire2.png')
-fire3 = pygame.image.load('sprites/fire3.png')
-fire4 = pygame.image.load('sprites/fire4.png')
-fire5 = pygame.image.load('sprites/fire5.png')
-fires = [fire1, fire2, fire3, fire4, fire5]
 rocket = pygame.image.load('sprites/rocket.png')
 compRocket = pygame.image.load('sprites/comprocket.png')
-explosion = [exp1,exp2,exp3,exp4,exp5]
+
 pygame.mixer.Channel(0).play(bgmusic, -1)
-userTurn = False
+userTurn = True
 huntMode = False
 probabilityMap = []
 y = []
@@ -107,15 +99,6 @@ for i in range(boardDimension):
     x = []
     y = []
     z = []
-def resetProbabilityMap():
-    global probabilityMap
-    z = [0]
-    for i in range(boardDimension):
-        for j in range(boardDimension):
-            z = z + [0]
-        probabilityMap += [z]
-        z = []
-    print("PROBABILITIES RESET: ", probabilityMap)
 
 print("userGrid DIMENSIONS: " + str(len(userGrid)) + " x " + str(len(userGrid[-1])))
 
@@ -127,6 +110,9 @@ currentShipDirection = "NONE"
 acquiredDirection = False
 destroySteps = 0
 backTracking = False
+currentDestroyedNumber = 0
+prevDestroyedNumber = 0
+fireval = 0
 def animateExplosion(board, column, row): # board = 0 for left, 1 for right
     if(board == 1):
         r = compRocket
@@ -158,8 +144,7 @@ def animateExplosion(board, column, row): # board = 0 for left, 1 for right
     for i in explosion:
             pygame.time.Clock().tick(12)
             pygame.display.update(screen.blit(i,(leftMargin  + (boardWidth + leftMargin)*board + column*(cellWidth + cellMargin),topMargin + row*(cellWidth + cellMargin))))
-currentDestroyedNumber = 0
-prevDestroyedNumber = 0
+
 def getActiveShipNumber():
     global computerShips, prevDestroyedNumber, currentDestroyedNumber
     currentDestroyedNumber = 0
@@ -482,6 +467,7 @@ def checkFinished():
             label = gothFont.render("You Win!", True, colours["text"])
         while(True):
             screen.fill(colours['bg'])
+            
             screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight/2 - label.get_height()/2)))
             flipScreen()
             for event in pygame.event.get():
@@ -494,9 +480,9 @@ class Ship(pygame.sprite.Sprite):
         self.selected = False
         self.shipType = shipType
         self.rotated = False
-        self.image = pygame.image.load("sprites/normal/" + shipName + ".png")
+        self.image = pygame.image.load("sprites/ships/normal/" + shipName + ".png")
         self.rect = pygame.Rect(startpos[0], startpos[1], int(cellWidth*shipType), cellWidth)
-        self.rotatedimage = pygame.image.load("sprites/rotated/" + shipName + ".png")
+        self.rotatedimage = pygame.image.load("sprites/ships/rotated/" + shipName + ".png")
         self.rotatedrect = pygame.Rect(startpos[0], startpos[1],  cellWidth,int(cellWidth*shipType))
         self.computerShip = not visible
         if(self.computerShip):
@@ -539,12 +525,30 @@ class Ship(pygame.sprite.Sprite):
                 self.visible = True
 
     def checkMouseDown(self, pos):
+        if(gameStart):
+            return
         if(not self.computerShip):
             if(self.rotated):
+                for i in ships:
+                    if(i.shipType != self.shipType):
+                        if(i.rotated):
+                            if(i.rotatedrect.colliderect(self.rotatedrect)):
+                                return
+                        else:
+                            if(i.rect.colliderect(self.rotatedrect)):
+                                return
                 if(self.rotatedrect.collidepoint(pos)):
                     pygame.mouse.set_visible(self.selected)
                     self.selected = not self.selected
             else:
+                for i in ships:
+                    if(i.shipType != self.shipType):
+                        if(i.rotated):
+                            if(i.rotatedrect.colliderect(self.rect)):
+                                return
+                        else:
+                            if(i.rect.colliderect(self.rect)):
+                                return
                 if(self.rect.collidepoint(pos)):
                     pygame.mouse.set_visible(self.selected)
                     self.selected = not self.selected
@@ -617,7 +621,7 @@ def initPygame():
     displayWidth = 2 * (cellWidth + cellMargin) * \
         boardDimension + 2*(rightMargin + leftMargin)
     displayHeight = 1 * (cellWidth + cellMargin) * \
-        boardDimension + topMargin + bottomMargin
+        boardDimension + topMargin + bottomMargin + 20
     screen = pygame.display.set_mode(
         [displayWidth, displayHeight])
     screen.fill(colours['bg'])
@@ -721,7 +725,15 @@ def drawText():
     screen.blit(label,(int(leftMargin + ( boardDimension/2)*(cellMargin + cellWidth) - label.get_width()/2), 15))
     label = subtitleFont.render("Your Ships", True, colours["text"])
     screen.blit(label,(int(boardWidth+2*leftMargin + ( boardDimension/2)*(cellMargin + cellWidth) - label.get_width()/2), 15))
-fireval = 0
+    if(not gameStart):
+        label = font.render("F1 to start. Space to rotate ship", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
+    elif (userTurn):
+        label = font.render("Your Turn", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
+    elif (gameStart and not userTurn):
+        label = font.render("Computer Playing...", True, colours["text"])
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
 def drawFire():
     global fireval
     for i in range(len(userGrid)):
@@ -773,7 +785,7 @@ def showInstructions():
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(130)))
         label = font.render("1) Place your ships on the grid by selecting and deselecting at your desired location (right side grid).", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(160)))
-        label = font.render("2) Press any key to rotate your ship.", True, colours["text"])
+        label = font.render("2) Press space to rotate your ship.", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(190)))
         label = font.render("3) Press F1 to start the game after setting up your ships.", True, colours["text"])
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(220)))
