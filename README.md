@@ -26,6 +26,11 @@ The AI uses the following policy to make decisions on where to hit:
 ![Still 1at](https://github.com/awesomeroks/battleship/blob/master/images/1.png?raw=true)
 ![Still 3at](https://github.com/awesomeroks/battleship/blob/master/images/3.png?raw=true)
 
+## Credits
+
+* Ship Sprites from https://www.vecteezy.com/free-vector/frigate - Frigate Vectors by Vecteezy
+* Background music - Gameboy (Battleship)
+* Fire and Explosion sprites from opengameart.org
 
 ### TODO
 
