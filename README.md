@@ -20,6 +20,13 @@ The AI uses the following policy to make decisions on where to hit:
 3) Once the orientation is determined, destroy the ship until the ship is sunk.
 4) Repeat from step 1.
 
+## Images
+![Still 4at](https://github.com/awesomeroks/battleship/blob/master/images/4.png?raw=true)
+![Still 5at](https://github.com/awesomeroks/battleship/blob/master/images/5.png?raw=true)
+![Still 1at](https://github.com/awesomeroks/battleship/blob/master/images/1.png?raw=true)
+![Still 3at](https://github.com/awesomeroks/battleship/blob/master/images/3.png?raw=true)
+
+
 ### TODO
 
 1) Experiment with Reinforcement Learning to determine if victor can be achieved faster than human-like-policy.
