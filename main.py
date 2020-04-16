@@ -716,10 +716,10 @@ def drawText():
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
     elif (userTurn):
         label = font.render("Your Turn", True, colours["text"])
-        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 30)))
     elif (gameStart and not userTurn):
         label = font.render("Computer Playing...", True, colours["text"])
-        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 10)))
+        screen.blit(label,(int((displayWidth - label.get_width())/2),int(displayHeight - label.get_height() - 30)))
 def drawFire():
     global fireval
     for i in range(len(userGrid)):
