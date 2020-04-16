@@ -144,7 +144,6 @@ def animateExplosion(board, column, row): # board = 0 for left, 1 for right
     for i in explosion:
             pygame.time.Clock().tick(12)
             pygame.display.update(screen.blit(i,(leftMargin  + (boardWidth + leftMargin)*board + column*(cellWidth + cellMargin),topMargin + row*(cellWidth + cellMargin))))
-
 def getActiveShipNumber():
     global computerShips, prevDestroyedNumber, currentDestroyedNumber
     currentDestroyedNumber = 0
@@ -173,7 +172,6 @@ def chooseRandom():
         print("HIT THE SUCKER AT", (c,r))
         huntMode = True
     userTurn = True
-
 def destroyTarget():
     global prevc, prevr, huntMode, acquiredDirection, currentShipDirection, destroySteps, backTracking, availableDirections, prevDestroyedNumber, currentDestroyedNumber
     print("DESTROYING", (prevc, prevr), currentShipDirection)
@@ -285,8 +283,6 @@ def destroyTarget():
         acquiredDirection = False
         destroySteps = 0
         huntMode = False
-
-
 def setAvailableDirections():
     global availableDirections, prevc, prevr
     availableDirections = {"UP", "DOWN", "LEFT", "RIGHT"}
@@ -310,9 +306,6 @@ def setAvailableDirections():
         chooseRandom()
         return True
     return False
-
-
-
 def huntTarget():
     global prevc, prevr, huntDirection, acquiredDirection, currentShipDirection, availableDirections
     if(acquiredDirection == True):
@@ -371,8 +364,6 @@ def huntTarget():
             currentShipDirection = "DOWN"
             acquiredDirection = True
     print("SHIP IS IN DIRECTION: ", currentShipDirection)
-
-
 def computerAlgo():
     global userTurn, gameStart, huntMode, huntDirection, acquiredDirection, prevc, prevr
 
@@ -400,8 +391,6 @@ def computerAlgo():
             print("HIT THE SUCKER AT", (c,r))
             huntMode = True
         userTurn = True
-
-
 def placeComputerShips():
     # 0 - horizontal, 1 - vertical
 
@@ -445,7 +434,6 @@ def placeComputerShips():
                         i.rotated = True
                         i.finishSetup()
                         print(i.cells)
-
 def checkFinished():
     if(not gameStart):
         return
@@ -473,7 +461,6 @@ def checkFinished():
             for event in pygame.event.get():
                 if(event.type == pygame.QUIT or event.type == pygame.KEYDOWN):
                     closePygame()
-
 class Ship(pygame.sprite.Sprite):
     def __init__(self, shipType, startpos,shipName, visible = True):
         super().__init__()
@@ -608,7 +595,6 @@ class Ship(pygame.sprite.Sprite):
                 screen.blit(self.rotatedimage, self.rotatedrect)
             else:
                 screen.blit(self.image, self.rect)
-
 def initPygame():
     global screen, font, displayHeight, displayWidth, gothFont, smallHeadFont, subtitleFont
     pygame.init()
@@ -748,21 +734,17 @@ def drawFire():
 def draw():
     screen.fill(colours['bg'])
     drawBoard()
-    
     drawText()
-    
     for i in ships:
         i.draw()
     for i in computerShips:
         i.draw()
     drawFire()
-    # getActiveShipNumber()
     flipScreen()
 
 def closePygame():
     pygame.display.quit()
     pygame.quit()
-
     exit(0)
 
 
@@ -778,7 +760,6 @@ def showInstructions():
         screen.fill(colours["bg"])
         label = gothFont.render("Battleship", True, colours["text"], )
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(25)))
-        
         label = smallHeadFont.render("Battle of the Legends", True, colours["text"], )
         screen.blit(label,(int((displayWidth - label.get_width())/2),int(70)))
         label = subtitleFont.render("Instructions", True, colours["text"])
