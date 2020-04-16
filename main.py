@@ -1,6 +1,6 @@
 '''
 ship sprites from: https://www.vecteezy.com/free-vector/frigate - Frigate Vectors by Vecteezy
-
+Sound credits - GAMEBOY(BATTLESHIP)
 '''
 
 import pygame
