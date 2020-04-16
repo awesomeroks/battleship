@@ -29,5 +29,5 @@ The AI uses the following policy to make decisions on where to hit:
 
 ### TODO
 
-1) Experiment with Reinforcement Learning to determine if victor can be achieved faster than human-like-policy.
+1) Experiment with Reinforcement Learning to determine if victory can be achieved faster than human-like-policy.
 
